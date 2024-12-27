@@ -1,16 +1,12 @@
-import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy, VerifyCallback } from 'passport-google-oauth20';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
-
-import { User } from '../entities/user.entity';
+import { Inject, Injectable } from '@nestjs/common';
+import { Profile, Strategy, VerifyCallback } from 'passport-google-oauth20';
+import { AuthService } from '../auth.service';
 
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   constructor(
-    @InjectRepository(User)
-    private userRepository: Repository<User>,
+    @Inject(AuthService) private readonly authService: AuthService,
   ) {
     super({
       clientID: process.env.GOOGLE_CLIENT_ID,
@@ -20,20 +16,13 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
     });
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: VerifyCallback): Promise<any> {
-    const { id, displayName, emails } = profile;
-
-    let user = await this.userRepository.findOne({ where: { googleId: id } });
-
-    if (!user) {
-      user = this.userRepository.create({
-        googleId: id,
-        name: displayName,
-        email: emails[0].value,
-        accessToken,
-      });
-      await this.userRepository.save(user);
-    }
+  async validate(accessToken: string, refreshToken: string, profile: Profile, done: VerifyCallback) {
+    const user = await this.authService.validateUser({ 
+      googleId: profile.id,
+      name: profile.displayName, 
+      email: profile.emails[0].value,
+      accessToken
+    });
 
     done(null, user);
   }
