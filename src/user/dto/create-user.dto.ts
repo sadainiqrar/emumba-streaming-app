@@ -1,4 +1,4 @@
-export type UserDetails = {
+export class CreateUserDto {
   googleId: string;
   email: string;
   name: string;
