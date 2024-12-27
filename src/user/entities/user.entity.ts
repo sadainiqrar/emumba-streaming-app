@@ -16,4 +16,7 @@ export class User {
 
   @Column({ default: null })
   accessToken: string;
+
+  @Column({ default: 'user' })
+  role: string; // 'user' or 'admin'
 }

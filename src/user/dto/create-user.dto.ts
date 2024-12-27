@@ -3,4 +3,5 @@ export class CreateUserDto {
   email: string;
   name: string;
   accessToken: string;
+  role?: string; // Optional, default to 'user'
 }
