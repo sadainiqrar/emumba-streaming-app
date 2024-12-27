@@ -7,11 +7,10 @@ import { AuthService } from './auth.service';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  // Redirect user to Google for authentication
-  @Get('google')
+  @Get('google/login')
   @UseGuards(AuthGuard('google'))
-  async googleAuth() {
-    // Initiates Google authentication
+  handleLogin() {
+    return { message: 'Google Authentication' }
   }
 
   // Google redirects here after successful authentication
