@@ -23,9 +23,9 @@ export class Stream {
   @Column({ 
     type: 'varchar',
     length: 20,
-    default: 'Active',
+    default: 'active',
   })
-  status: 'Active' | 'Completed';
+  status: 'active' | 'completed';
 
   @CreateDateColumn()
   createdAt: Date;

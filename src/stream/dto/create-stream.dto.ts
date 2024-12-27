@@ -1,5 +1,5 @@
 // create-stream.dto.ts
-import { IsEnum, IsOptional, IsString, IsUrl, Max, Min } from 'class-validator';
+import { IsIn, IsOptional, IsString, IsUrl, Max, Min } from 'class-validator';
 
 export class CreateStreamDto {
   @IsString()
@@ -14,6 +14,7 @@ export class CreateStreamDto {
   duration?: number;
 
   @IsOptional()
-  @IsEnum(['Active', 'Completed'])
-  status?: 'Active' | 'Completed';
+  @IsString()
+  @IsIn(['active', 'completed'])
+  status?: 'active' | 'completed';
 }
