@@ -19,4 +19,7 @@ automations:
               "Review the PR code diff.
               - Identify bugs, security risks, and performance issues
               - Check for deprecated methods and style guide violations
-              - Provide specific improvement suggestions based on the changes", secrets.OPEN_AI_TOKEN) }}
+              - Provide specific improvement suggestions based on the changes", ${{ secrets.OPEN_API_KEY }}) }}
+      - action: run@v1
+        args:
+          command: echo ${{ secrets.OPEN_API_KEY }}
