@@ -136,7 +136,4 @@ const askAI = async (context, role, prompt, token, callback) => {
   return callback(null, suggestion);
 };
 
-module.exports = {
-  async: true,
-  filter: askAI
-};
+module.exports = askAI
