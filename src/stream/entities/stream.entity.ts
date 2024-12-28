@@ -3,8 +3,10 @@ import {
   PrimaryGeneratedColumn,
   Column,
   CreateDateColumn,
-  UpdateDateColumn
+  UpdateDateColumn,
+  OneToMany
 } from 'typeorm';
+import { Chat } from 'src/chat/entities/chat.entity';
 
 @Entity('streams')
 export class Stream {
@@ -35,4 +37,7 @@ export class Stream {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @OneToMany(() => Chat, (chat) => chat.stream)
+  chats: Chat[];
 }
