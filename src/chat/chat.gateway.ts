@@ -12,6 +12,8 @@ import { Server, Socket } from 'socket.io';
 import { CreateChatDto } from "./dto/create-chat.dto";
 import { ChatService } from "./chat.service";
 
+
+// TODO: add jwt guard for connection
 @WebSocketGateway({
   cors: {
     origin: '*',
