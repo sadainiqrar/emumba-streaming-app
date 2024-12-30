@@ -60,8 +60,8 @@ export class StreamController {
 
   @Post(':id/upload')
   @UseInterceptors(FileInterceptor('file'))
-  async uploadStream(@Param('id') id: string, @UploadedFile() file: any) {
-    await this.streamService.uploadStream(id, file);
+  uploadStream(@Param('id') id: string, @UploadedFile() file: any) {
+    this.streamService.uploadStream(id, file);
   }
 
   @Post(':id/end')

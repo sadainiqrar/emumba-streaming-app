@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { BullModule } from '@nestjs/bull';
 
 import { AppController } from './app.controller';
 import { FrontendController } from './frontend.controller';
@@ -26,6 +27,12 @@ import { ChatModule } from 'src/chat/chat.module';
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', '..', 'streams'),
       serveRoot: '/streams',
+    }),
+    BullModule.forRoot({
+      redis: {
+        host: 'localhost',
+        port: 6379,
+      },
     }),
     AuthModule,
     UserModule,

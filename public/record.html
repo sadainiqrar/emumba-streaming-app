@@ -1,145 +1,164 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Record Stream</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    #video {
-      width: 100%;
-      max-width: 600px;
-      margin: 20px auto;
-      display: block;
-    }
-    #controls {
-      text-align: center;
-      margin: 20px auto;
-    }
-    #chat {
-      width: 100%;
-      max-width: 600px;
-      margin: 20px auto;
-    }
-    #messages {
-      border: 1px solid #ccc;
-      padding: 10px;
-      height: 200px;
-      overflow-y: scroll;
-    }
-    #messageInput {
-      width: calc(100% - 22px);
-      padding: 10px;
-    }
-  </style>
-</head>
-<body>
-  <h1>Record Stream</h1>
-  <video id="video" controls></video>
-  <div id="controls">
-    <button id="createStream">Create Stream</button>
-    <button id="startRecording" disabled>Start Recording</button>
-    <button id="stopRecording" disabled>Stop Recording</button>
-  </div>
-  <div id="chat">
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Type a message...">
-  </div>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <script>
-    const video = document.getElementById('video');
-    const createStreamButton = document.getElementById('createStream');
-    const startRecordingButton = document.getElementById('startRecording');
-    const stopRecordingButton = document.getElementById('stopRecording');
-    const messages = document.getElementById('messages');
-    const messageInput = document.getElementById('messageInput');
-    const socket = io();
-
-    let mediaRecorder;
-    let stream;
-    let streamId;
-    let token = localStorage.getItem('token');
-
-    createStreamButton.addEventListener('click', async () => {
-      const response = await fetch('/api/streams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ title: 'My Live Stream' })
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        streamId = data.id;
-        startRecordingButton.disabled = false;
-        createStreamButton.disabled = true;
-      } else {
-        alert('Failed to create stream');
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Record Stream</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
       }
-    });
+      #video {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+        display: block;
+      }
+      #controls {
+        text-align: center;
+        margin: 20px auto;
+      }
+      #chat {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+      }
+      #messages {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 200px;
+        overflow-y: scroll;
+      }
+      #messageInput {
+        width: calc(100% - 22px);
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Record Stream</h1>
+    <video id="video" controls></video>
+    <div id="controls">
+      <button id="createStream">Create Stream</button>
+      <button id="startRecording" disabled>Start Recording</button>
+      <button id="stopRecording" disabled>Stop Recording</button>
+    </div>
+    <div id="chat">
+      <div id="messages"></div>
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script>
+      const video = document.getElementById('video');
+      const createStreamButton = document.getElementById('createStream');
+      const startRecordingButton = document.getElementById('startRecording');
+      const stopRecordingButton = document.getElementById('stopRecording');
+      const messages = document.getElementById('messages');
+      const messageInput = document.getElementById('messageInput');
+      const socket = io();
+      const recordedChunks = [];
 
-    startRecordingButton.addEventListener('click', async () => {
-      stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-      video.srcObject = stream;
-      video.play();
+      let mediaRecorder;
+      let stream;
+      let streamId;
+      let token = localStorage.getItem('token');
 
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.ondataavailable = async (event) => {
-        if (event.data.size > 0) {
-          const formData = new FormData();
-          formData.append('file', event.data, 'video.webm');
+      createStreamButton.addEventListener('click', async () => {
+        const response = await fetch('/api/streams', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title: 'My Live Stream' }),
+        });
 
-          await fetch(`/api/streams/${streamId}/upload`, {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${token}`
-            },
-            body: formData
-          });
-        }
-      };
-
-      mediaRecorder.start(1000); // Send data every second
-      startRecordingButton.disabled = true;
-      stopRecordingButton.disabled = false;
-    });
-
-    stopRecordingButton.addEventListener('click', async () => {
-      mediaRecorder.stop();
-      stream.getTracks().forEach(track => track.stop());
-
-      await fetch(`/api/streams/${streamId}/end`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
+        if (response.ok) {
+          const data = await response.json();
+          streamId = data.id;
+          startRecordingButton.disabled = false;
+          createStreamButton.disabled = true;
+        } else {
+          alert('Failed to create stream');
         }
       });
 
-      stopRecordingButton.disabled = true;
-      createStreamButton.disabled = false;
-    });
+      startRecordingButton.addEventListener('click', async () => {
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
+        });
+        video.srcObject = stream;
+        video.play();
 
-    // Handle chat messages
-    socket.on('receiveMessage', (message) => {
-      const messageElement = document.createElement('div');
-      messageElement.textContent = message;
-      messages.appendChild(messageElement);
-    });
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType: 'video/webm; codecs=vp9',
+        });
+        mediaRecorder.ondataavailable = async (event) => {
+          if (event.data.size > 0) {
+            recordedChunks.push(event.data);
+            const formData = new FormData();
+            formData.append('file', event.data, 'video.webm');
 
-    messageInput.addEventListener('keypress', (event) => {
-      if (event.key === 'Enter') {
-        const message = messageInput.value;
-        socket.emit('sendMessage', { streamId, message });
-        messageInput.value = '';
-      }
-    });
+            await fetch(`/api/streams/${streamId}/upload`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+              body: formData,
+            });
+          }
+        };
+        mediaRecorder.onstop = () => {
+          const blob = new Blob(recordedChunks, { type: 'video/webm' });
+          const url = URL.createObjectURL(blob);
+          console.log('Final video URL:', url);
+          // Create a download link
+        //   const a = document.createElement('a');
+        //   a.href = url;
+        //   a.download = 'recorded-video.webm'; // Specify the download filename
+        //   a.click();
 
-    // Join stream
-    socket.emit('joinStream', streamId);
-  </script>
-</body>
+        //   // Clean up the URL object
+        //   URL.revokeObjectURL(url);
+        };
+        mediaRecorder.start(2000); // Send data every second
+        startRecordingButton.disabled = true;
+        stopRecordingButton.disabled = false;
+      });
+
+      stopRecordingButton.addEventListener('click', async () => {
+        mediaRecorder.stop();
+        stream.getTracks().forEach((track) => track.stop());
+
+        await fetch(`/api/streams/${streamId}/end`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        stopRecordingButton.disabled = true;
+        createStreamButton.disabled = false;
+      });
+
+      // Handle chat messages
+      socket.on('receiveMessage', (message) => {
+        const messageElement = document.createElement('div');
+        messageElement.textContent = message;
+        messages.appendChild(messageElement);
+      });
+
+      messageInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          const message = messageInput.value;
+          socket.emit('sendMessage', { streamId, message });
+          messageInput.value = '';
+        }
+      });
+
+      // Join stream
+      socket.emit('joinStream', streamId);
+    </script>
+  </body>
 </html>
