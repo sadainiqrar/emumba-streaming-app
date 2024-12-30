@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Watch Stream</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    #video {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+      display: block;
+    }
+    #chat {
+      width: 100%;
+      max-width: 600px;
+      margin: 20px auto;
+    }
+    #messages {
+      border: 1px solid #ccc;
+      padding: 10px;
+      height: 200px;
+      overflow-y: scroll;
+    }
+    #messageInput {
+      width: calc(100% - 22px);
+      padding: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Watch Stream</h1>
+  <video id="video" controls></video>
+  <div id="chat">
+    <div id="messages"></div>
+    <input type="text" id="messageInput" placeholder="Type a message...">
+  </div>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  <script>
+    const video = document.getElementById('video');
+    const messages = document.getElementById('messages');
+    const messageInput = document.getElementById('messageInput');
+    const socket = io();
+    const urlParams = new URLSearchParams(window.location.search);
+    const streamId = urlParams.get('streamId');
+
+    function startStream() {
+      // Load HLS stream
+      if (Hls.isSupported()) {
+        const hls = new Hls();
+        hls.loadSource(`/streams/${streamId}/index.m3u8`); // Replace with actual stream URL
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, function () {
+          video.play();
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = `/streams/${streamId}/index.m3u8`; // Replace with actual stream URL
+        video.addEventListener('loadedmetadata', function () {
+          video.play();
+        });
+      }
+
+      // Handle chat messages
+      socket.on('receiveMessage', (message) => {
+        const messageElement = document.createElement('div');
+        messageElement.textContent = message;
+        messages.appendChild(messageElement);
+      });
+
+      messageInput.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          const message = messageInput.value;
+          socket.emit('sendMessage', { streamId, message });
+          messageInput.value = '';
+        }
+      });
+
+      // Join stream
+      socket.emit('joinStream', streamId);
+    }
+
+    startStream();
+  </script>
+</body>
+</html>

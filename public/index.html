@@ -1,209 +1,267 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Livestream</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    #video {
-      width: 100%;
-      max-width: 600px;
-      margin: 20px auto;
-      display: block;
-    }
-    #chat {
-      width: 100%;
-      max-width: 600px;
-      margin: 20px auto;
-    }
-    #messages {
-      border: 1px solid #ccc;
-      padding: 10px;
-      height: 200px;
-      overflow-y: scroll;
-    }
-    #messageInput {
-      width: calc(100% - 22px);
-      padding: 10px;
-    }
-    #login, #logout, #createStream, #startStream {
-      display: block;
-      margin: 10px auto;
-    }
-    #profile {
-      display: none;
-      margin: 20px auto;
-      max-width: 600px;
-      text-align: center;
-    }
-  </style>
-</head>
-<body>
-  <h1>Livestream</h1>
-  <button id="login">Login with Google</button>
-  <button id="logout">Logout</button>
-  <button id="createStream" disabled>Create Stream</button>
-  <button id="startStream" disabled>Start Stream</button>
-  <div id="profile">
-    <h2>Welcome, <span id="username"></span></h2>
-    <p>Email: <span id="email"></span></p>
-  </div>
-  <video id="video" controls></video>
-  <div id="chat">
-    <div id="messages"></div>
-    <input type="text" id="messageInput" placeholder="Type a message...">
-  </div>
-  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
-  <script>
-    const video = document.getElementById('video');
-    const messages = document.getElementById('messages');
-    const messageInput = document.getElementById('messageInput');
-    const loginButton = document.getElementById('login');
-    const logoutButton = document.getElementById('logout');
-    const createStreamButton = document.getElementById('createStream');
-    const startStreamButton = document.getElementById('startStream');
-    const profileDiv = document.getElementById('profile');
-    const usernameSpan = document.getElementById('username');
-    const emailSpan = document.getElementById('email');
-    const socket = io();
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Livestream</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+      }
+      #video {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+        display: block;
+      }
+      #chat {
+        width: 100%;
+        max-width: 600px;
+        margin: 20px auto;
+      }
+      #messages {
+        border: 1px solid #ccc;
+        padding: 10px;
+        height: 200px;
+        overflow-y: scroll;
+      }
+      #messageInput {
+        width: calc(100% - 22px);
+        padding: 10px;
+      }
+      #login,
+      #logout,
+      #createStream,
+      #startStream {
+        display: block;
+        margin: 10px auto;
+      }
+      #profile {
+        display: none;
+        margin: 20px auto;
+        max-width: 600px;
+        text-align: center;
+      }
 
-    let user = JSON.parse(localStorage.getItem('user'));
-    let token = localStorage.getItem('token');
-    let streamId = null;
+      #streams {
+        margin: 20px auto;
+        max-width: 600px;
+      }
+      .stream {
+        border: 1px solid #ccc;
+        padding: 10px;
+        margin: 10px 0;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Livestream</h1>
+    <button id="login">Login with Google</button>
+    <button id="logout">Logout</button>
+    <button id="createStream" disabled>Create Stream</button>
+    <button id="startStream" disabled>Start Stream</button>
+    <div id="profile">
+      <h2>Welcome, <span id="username"></span></h2>
+      <p>Email: <span id="email"></span></p>
+    </div>
+    <div id="streams"></div>
+    <div id="chat">
+      <div id="messages"></div>
+      <input type="text" id="messageInput" placeholder="Type a message..." />
+    </div>
+    <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script>
+      const video = document.getElementById('video');
+      const messages = document.getElementById('messages');
+      const messageInput = document.getElementById('messageInput');
+      const loginButton = document.getElementById('login');
+      const logoutButton = document.getElementById('logout');
+      const createStreamButton = document.getElementById('createStream');
+      const startStreamButton = document.getElementById('startStream');
+      const profileDiv = document.getElementById('profile');
+      const usernameSpan = document.getElementById('username');
+      const emailSpan = document.getElementById('email');
+      const streamsDiv = document.getElementById('streams');
+      const socket = io();
 
-    async function fetchProfile() {
-      if (token) {
-        const response = await fetch('/api/auth/profile', {
-          headers: {
-            'Authorization': `Bearer ${token}`
+      let user = JSON.parse(localStorage.getItem('user'));
+      let token = localStorage.getItem('token');
+      let streamId = null;
+
+      async function fetchProfile() {
+        if (token) {
+          const response = await fetch('/api/auth/profile', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (response.ok) {
+            const data = await response.json();
+            user = data;
+            localStorage.setItem('user', JSON.stringify(user));
+            usernameSpan.textContent = user.name;
+            emailSpan.textContent = user.email;
+            profileDiv.style.display = 'block';
+            loginButton.style.display = 'none';
+            logoutButton.style.display = 'block';
+            createStreamButton.disabled = false;
+          } else {
+            loginButton.style.display = 'block';
+            logoutButton.style.display = 'none';
+            createStreamButton.disabled = true;
+            startStreamButton.disabled = true;
           }
-        });
-        if (response.ok) {
-          const data = await response.json();
-          user = data;
-          localStorage.setItem('user', JSON.stringify(user));
-          usernameSpan.textContent = user.name;
-          emailSpan.textContent = user.email;
-          profileDiv.style.display = 'block';
-          loginButton.style.display = 'none';
-          logoutButton.style.display = 'block';
-          createStreamButton.disabled = false;
         } else {
           loginButton.style.display = 'block';
-          logoutButton.style.display = 'none';
           createStreamButton.disabled = true;
           startStreamButton.disabled = true;
         }
-      } else {
+      }
+
+      async function handleLogin() {
+        window.location.href = '/api/auth/google/login';
+      }
+
+      async function handleLogout() {
+        user = null;
+        token = null;
+        streamId = null;
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+        profileDiv.style.display = 'none';
         loginButton.style.display = 'block';
+        logoutButton.style.display = 'none';
         createStreamButton.disabled = true;
         startStreamButton.disabled = true;
+        stopStream();
       }
-    }
 
-    async function handleLogin() {
-      window.location.href = '/api/auth/google/login';
-    }
-
-    async function handleLogout() {
-      user = null;
-      token = null;
-      streamId = null;
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      profileDiv.style.display = 'none';
-      loginButton.style.display = 'block';
-      logoutButton.style.display = 'none';
-      createStreamButton.disabled = true;
-      startStreamButton.disabled = true;
-      stopStream();
-    }
-
-    async function handleCreateStream() {
-      const response = await fetch('/api/streams', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ title: 'My Stream' }) // Replace with actual stream URL
-      });
-      if (response.ok) {
-        const data = await response.json();
-        streamId = data.id;
-        startStreamButton.disabled = false;
-      } else {
-        alert('Failed to create stream');
-      }
-    }
-
-    async function handleStartStream() {
-      const response = await fetch(`/api/streams/${streamId}/start`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      if (response.ok) {
-        startStream();
-      } else {
-        alert('Failed to start stream');
-      }
-    }
-
-    function startStream() {
-      // Load HLS stream
-      if (Hls.isSupported()) {
-        const hls = new Hls();
-        hls.loadSource(`/streams/${streamId}/index.m3u8`); // Replace with actual stream URL
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, function () {
-          video.play();
+      async function handleCreateStream() {
+        const response = await fetch('/api/streams', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ title: 'My Stream' }), // Replace with actual stream URL
         });
-      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        video.src = `/streams/${streamId}/index.m3u8`; // Replace with actual stream URL
-        video.addEventListener('loadedmetadata', function () {
-          video.play();
-        });
+        if (response.ok) {
+          const data = await response.json();
+          streamId = data.id;
+          startStreamButton.disabled = false;
+        } else {
+          alert('Failed to create stream');
+        }
       }
 
-      // Handle chat messages
-      socket.on('receiveMessage', (message) => {
-        const messageElement = document.createElement('div');
-        messageElement.textContent = message;
-        messages.appendChild(messageElement);
-      });
-
-      messageInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-          const message = messageInput.value;
-          socket.emit('sendMessage', { streamId, message });
-          messageInput.value = '';
+      async function handleStartStream() {
+        const response = await fetch(`/api/streams/${streamId}/start`, {
+          method: 'POST',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          startStream();
+        } else {
+          alert('Failed to start stream');
         }
-      });
+      }
 
-      // Join stream
-      socket.emit('joinStream', streamId);
-    }
+      function startStream() {
+        // Load HLS stream
+        if (Hls.isSupported()) {
+          const hls = new Hls();
+          hls.loadSource(`/streams/${streamId}/index.m3u8`); // Replace with actual stream URL
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, function () {
+            video.play();
+          });
+        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+          video.src = `/streams/${streamId}/index.m3u8`; // Replace with actual stream URL
+          video.addEventListener('loadedmetadata', function () {
+            video.play();
+          });
+        }
 
-    function stopStream() {
-      video.pause();
-      video.src = '';
-      messages.innerHTML = '';
-      socket.emit('leaveStream', streamId);
-    }
+        // Handle chat messages
+        socket.on('receiveMessage', (message) => {
+          const messageElement = document.createElement('div');
+          messageElement.textContent = message;
+          messages.appendChild(messageElement);
+        });
 
-    loginButton.addEventListener('click', handleLogin);
-    logoutButton.addEventListener('click', handleLogout);
-    createStreamButton.addEventListener('click', handleCreateStream);
-    startStreamButton.addEventListener('click', handleStartStream);
+        messageInput.addEventListener('keypress', (event) => {
+          if (event.key === 'Enter') {
+            const message = messageInput.value;
+            socket.emit('sendMessage', { streamId, message });
+            messageInput.value = '';
+          }
+        });
 
-    // Check if user is already logged in
-    fetchProfile();
-  </script>
-</body>
+        // Join stream
+        socket.emit('joinStream', streamId);
+      }
+
+      function stopStream() {
+        video.pause();
+        video.src = '';
+        messages.innerHTML = '';
+        socket.emit('leaveStream', streamId);
+      }
+
+      async function deleteStream(id) {
+        const response = await fetch(`/api/streams/${id}`, {
+          method: 'DELETE',
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          fetchStreams();
+        } else {
+          alert('Failed to delete stream');
+        }
+      }
+
+      async function fetchStreams() {
+        if (!token) {
+          return;
+        }
+        const response = await fetch('/api/streams', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (response.ok) {
+          const streams = await response.json();
+          streamsDiv.innerHTML = '';
+          streams.forEach((stream) => {
+            const streamElement = document.createElement('div');
+            streamElement.className = 'stream';
+            streamElement.innerHTML = `
+            <h3>${stream.title}</h3>
+            <button onclick="watchStream('${stream.id}')">Watch</button>
+            <button onclick="deleteStream('${stream.id}')">Delete</button>
+          `;
+            streamsDiv.appendChild(streamElement);
+          });
+        }
+      }
+
+      function watchStream(id) {
+        window.location.href = `/api/frontend/watch?streamId=${id}`;
+      }
+
+      loginButton.addEventListener('click', handleLogin);
+      logoutButton.addEventListener('click', handleLogout);
+      createStreamButton.addEventListener('click', handleCreateStream);
+      startStreamButton.addEventListener('click', handleStartStream);
+
+      // Check if user is already logged in
+      fetchProfile();
+      fetchStreams();
+    </script>
+  </body>
 </html>
