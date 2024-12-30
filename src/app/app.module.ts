@@ -1,7 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 import { AppController } from './app.controller';
+import { FrontendController } from './frontend.controller';
 import { AppService } from './app.service';
 import { AuthModule } from '../auth/auth.module';
 import { UserModule } from 'src/user/user.module';
@@ -20,12 +23,16 @@ import { ChatModule } from 'src/chat/chat.module';
       entities: [User, Stream, Chat],
       synchronize: true, // Disable in production
     }),
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', '..', 'streams'),
+      serveRoot: '/streams',
+    }),
     AuthModule,
     UserModule,
     StreamModule,
     ChatModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, FrontendController],
   providers: [AppService],
 })
 export class AppModule {}

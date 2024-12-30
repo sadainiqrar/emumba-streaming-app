@@ -9,8 +9,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 
-import { CreateChatDto } from "./dto/create-chat.dto";
-import { ChatService } from "./chat.service";
+import { CreateChatDto } from './dto/create-chat.dto';
+import { ChatService } from './chat.service';
 
 @WebSocketGateway({
   cors: {
@@ -39,23 +39,49 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinStream')
-  async handleJoinStream(@MessageBody() streamId: string, @ConnectedSocket() client: Socket) {
+  async handleJoinStream(
+    @MessageBody() streamId: string,
+    @ConnectedSocket() client: Socket
+  ) {
     client.join(streamId);
     console.log(`Client ${client.id} joined stream ${streamId}`);
     client.emit('joinedStream', `You joined stream ${streamId}`);
   }
 
   @SubscribeMessage('leaveStream')
-  async handleLeaveStream(@MessageBody() streamId: string, @ConnectedSocket() client: Socket) {
+  async handleLeaveStream(
+    @MessageBody() streamId: string,
+    @ConnectedSocket() client: Socket
+  ) {
     client.leave(streamId);
     console.log(`Client ${client.id} left stream ${streamId}`);
     client.emit('leftStream', `You left stream ${streamId}`);
   }
 
   @SubscribeMessage('sendMessage')
-  async handleSendMessage(@MessageBody() createChatDto: CreateChatDto,) {
+  async handleSendMessage(@MessageBody() createChatDto: CreateChatDto) {
     const newChat = await this.chatService.create(createChatDto);
     this.server.to(createChatDto.streamId).emit('receiveMessage', newChat);
     console.log(`New message sent to stream ${createChatDto.streamId}`);
+  }
+
+  @SubscribeMessage('startStream')
+  async handleStartStream(
+    @MessageBody() streamId: string,
+    @ConnectedSocket() client: Socket
+  ) {
+    client.join(streamId);
+    console.log(`Stream started with ID ${streamId}`);
+    this.server.to(streamId).emit('streamStarted', { streamId });
+  }
+
+  @SubscribeMessage('endStream')
+  async handleEndStream(
+    @MessageBody() streamId: string,
+    @ConnectedSocket() client: Socket
+  ) {
+    client.leave(streamId);
+    console.log(`Stream ended with ID ${streamId}`);
+    this.server.to(streamId).emit('streamEnded', { streamId });
   }
 }

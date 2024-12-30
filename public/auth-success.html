@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authentication Success</title>
+  <script>
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const profile = JSON.parse(decodeURIComponent(urlParams.get('profile')));
+
+      localStorage.setItem('user', JSON.stringify(profile));
+      localStorage.setItem('token', profile.accessToken);
+
+      window.location.href = '/api/frontend';
+    };
+  </script>
+</head>
+<body>
+  <h1>Authentication Successful</h1>
+  <p>Redirecting...</p>
+</body>
+</html>
