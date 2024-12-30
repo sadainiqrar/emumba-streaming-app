@@ -7,11 +7,18 @@ import {
   Param,
   Delete,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import * as path from 'path';
+import * as fs from 'fs';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { AuthGuard } from '@nestjs/passport';
+
 import { StreamService } from './stream.service';
 import { CreateStreamDto } from './dto/create-stream.dto';
 import { UpdateStreamDto } from './dto/update-stream.dto';
-import { AuthGuard } from '@nestjs/passport';
+
 
 @Controller('streams')
 @UseGuards(AuthGuard('jwt'))
@@ -20,7 +27,7 @@ export class StreamController {
 
   @Post()
   create(@Body() createStreamDto: CreateStreamDto) {
-    createStreamDto.url = `https://example.com/streams/${Date.now()}`;
+    createStreamDto.url = `/streams/${Date.now()}`;
     return this.streamService.create(createStreamDto);
   }
 
@@ -48,5 +55,17 @@ export class StreamController {
   startStream(@Param('id') id: string) {
     const input = `./streams/test.mp4`; // Replace with actual input file path
     return this.streamService.startHlsStream(id, input);
+  }
+
+
+  @Post(':id/upload')
+  @UseInterceptors(FileInterceptor('file'))
+  async uploadStream(@Param('id') id: string, @UploadedFile() file: any) {
+    await this.streamService.uploadStream(id, file);
+  }
+
+  @Post(':id/end')
+  async endStream(@Param('id') id: string) {
+    return this.streamService.endStream(id);
   }
 }

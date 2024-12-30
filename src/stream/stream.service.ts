@@ -52,6 +52,19 @@ export class StreamService {
     await this.streamRepository.remove(stream);
   }
 
+  async uploadStream(id: string, file: any) {
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+    const inputPath = path.join(uploadsDir, `${id}.webm`);
+
+    // Ensure the uploads directory exists
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    fs.writeFileSync(inputPath, file.buffer);
+    await this.startHlsStream(id, inputPath);
+  }
+
   async startHlsStream(streamId: string, input: string) {
     const stream = await this.findOne(streamId);
     const outputDir = path.join(__dirname, '..', '..', 'streams', streamId);
@@ -88,9 +101,11 @@ export class StreamService {
     .output(output)
     .on('end', () => {
       console.log('HLS stream ended');
+      fs.unlinkSync(input);
     })
     .on('error', (err) => {
       console.error('Error in HLS stream:', err);
+      fs.unlinkSync(input);
     })
     .run();
   }

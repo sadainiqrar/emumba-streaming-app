@@ -138,21 +138,7 @@
       }
 
       async function handleCreateStream() {
-        const response = await fetch('/api/streams', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ title: 'My Stream' }), // Replace with actual stream URL
-        });
-        if (response.ok) {
-          const data = await response.json();
-          streamId = data.id;
-          startStreamButton.disabled = false;
-        } else {
-          alert('Failed to create stream');
-        }
+        window.location.href = `/api/frontend/record`;
       }
 
       async function handleStartStream() {
