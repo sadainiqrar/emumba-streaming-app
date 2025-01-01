@@ -37,11 +37,11 @@ export class StreamService {
 
     const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
     const inputFilePath = path.join(uploadsDir, `${id}.webm`);
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
-    if (fs.existsSync(uploadsDir)) {
-      fs.rmdirSync(uploadsDir, { recursive: true });
-      console.log(`Uploads directory ${uploadsDir} removed`);
-    }
+    // const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
+    // if (fs.existsSync(uploadsDir)) {
+    //   fs.rmdirSync(uploadsDir, { recursive: true });
+    //   console.log(`Uploads directory ${uploadsDir} removed`);
+    // }
 
     // Add the upload and conversion task to the queue
     await this.streamQueue.add(
