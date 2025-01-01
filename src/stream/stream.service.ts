@@ -31,12 +31,20 @@ export class StreamService {
     stream.endedAt = new Date();
     await this.streamRepository.save(stream);
 
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
-    if (fs.existsSync(uploadsDir)) {
-      fs.rmdirSync(uploadsDir, { recursive: true });
-      console.log(`Uploads directory ${uploadsDir} removed`);
-    }
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
+    const inputFilePath = path.join(uploadsDir, `${id}.webm`);
+    // const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
+    // if (fs.existsSync(uploadsDir)) {
+    //   fs.rmdirSync(uploadsDir, { recursive: true });
+    //   console.log(`Uploads directory ${uploadsDir} removed`);
+    // }
 
+    // Add the upload and conversion task to the queue
+    await this.streamQueue.add(
+      'convert',
+      { id, chunkPath: inputFilePath },
+      { delay: 1000 }
+    );
     return stream;
   }
 
@@ -64,20 +72,25 @@ export class StreamService {
   }
 
   async uploadStream(id: string, file: any) {
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
+    // const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
 
+    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
     // Ensure the uploads directory exists
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const chunkPath = path.join(uploadsDir, `${Date.now()}.webm`);
-    fs.writeFileSync(chunkPath, file.buffer);
-    // Add the upload and conversion task to the queue
-    await this.streamQueue.add('convert', { id, uploadsDir });
+    // const chunkPath = path.join(uploadsDir, `${Date.now()}.webm`);
+    // fs.writeFileSync(chunkPath, file.buffer);
+    const inputFilePath = path.join(uploadsDir, `${id}.webm`);
+
+    fs.appendFile(inputFilePath, file.buffer, (err) => {
+      if (err) throw err;
+      console.log('The "data to append" was appended to file!');
+    });
   }
 
-  async startHlsStream(streamId: string, inputDir: string) {
+  async startHlsStream(streamId: string, chunkPath: string) {
     const stream = await this.findOne(streamId);
     const outputDir = path.join(__dirname, '..', '..', 'streams', streamId);
     const output = path.join(outputDir, 'index.m3u8');
@@ -87,17 +100,8 @@ export class StreamService {
       fs.mkdirSync(outputDir, { recursive: true });
     }
 
-    const fileListPath = path.join(inputDir, 'filelist.txt');
-    const files = fs
-      .readdirSync(inputDir)
-      .filter((file) => file.endsWith('.webm'));
-    const fileListContent = files
-      .map((file) => `file '${path.join(inputDir, file)}'`)
-      .join('\n');
-    fs.writeFileSync(fileListPath, fileListContent);
-
-    ffmpeg(fileListPath)
-      .inputOptions(['-f concat', '-safe 0'])
+    console.log('herehere" ', { stream, chunkPath, output });
+    ffmpeg(chunkPath)
       .outputOptions([
         '-preset veryfast',
         '-g 50',
