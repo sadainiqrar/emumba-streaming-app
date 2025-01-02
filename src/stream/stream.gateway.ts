@@ -101,7 +101,7 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
       `rtmp://localhost:1935/live/${streamId}`, // RTMP server URL
     ]);
 
-    this.streamService.encodeLiveStream(streamId)
+    // this.streamService.encodeLiveStream(streamId)
     this.ffmpegProcess.stdin.on('error', (err) => {
       console.error('FFmpeg stdin error:', err);
     });

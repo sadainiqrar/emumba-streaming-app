@@ -133,6 +133,7 @@
           },
         });
 
+        socket.emit('endStream', streamId)
         stopRecordingButton.disabled = true;
         createStreamButton.disabled = false;
       });

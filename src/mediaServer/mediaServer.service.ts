@@ -20,6 +20,11 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
         ping: 30,
         ping_timeout: 60,
       },
+      http: {
+        port: 8080,
+        allow_origin: '*',
+        mediaroot: './uploads',
+      },
       trans: {
         ffmpeg: require('@ffmpeg-installer/ffmpeg').path, // Path to FFmpeg from ffmpeg-fluent
         tasks: [
@@ -31,8 +36,8 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
             mp4Flags: '[movflags=frag_keyframe+empty_moov]',
           },
         ],
-        MediaRoot: './streams',
       },
+      MediaRoot: './uploads'
     };
     
     this.nms = new NodeMediaServer(config);
