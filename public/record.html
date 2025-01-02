@@ -96,35 +96,30 @@
         });
         mediaRecorder.ondataavailable = async (event) => {
           if (event.data.size > 0) {
-            recordedChunks.push(event.data);
-            const formData = new FormData();
-            formData.append('file', event.data, 'video.webm');
+            const reader = new FileReader();
+            reader.onload = () => {
+              const arrayBuffer = reader.result;
+              socket.emit('videoChunk', { streamId, chunk: arrayBuffer });
+            };
+            reader.readAsArrayBuffer(event.data);
+            // const formData = new FormData();
+            // formData.append('file', event.data, 'video.webm');
 
-            await fetch(`/api/streams/${streamId}/upload`, {
-              method: 'POST',
-              headers: {
-                Authorization: `Bearer ${token}`,
-              },
-              body: formData,
-            });
+            // await fetch(`/api/streams/${streamId}/upload`, {
+            //   method: 'POST',
+            //   headers: {
+            //     Authorization: `Bearer ${token}`,
+            //   },
+            //   body: formData,
+            // });
           }
-        };
-        mediaRecorder.onstop = () => {
-          const blob = new Blob(recordedChunks, { type: 'video/webm' });
-          const url = URL.createObjectURL(blob);
-          console.log('Final video URL:', url);
-          // Create a download link
-        //   const a = document.createElement('a');
-        //   a.href = url;
-        //   a.download = 'recorded-video.webm'; // Specify the download filename
-        //   a.click();
-
-        //   // Clean up the URL object
-        //   URL.revokeObjectURL(url);
         };
         mediaRecorder.start(2000); // Send data every second
         startRecordingButton.disabled = true;
         stopRecordingButton.disabled = false;
+
+        // Emit startStream event
+        socket.emit('startStream', streamId);
       });
 
       stopRecordingButton.addEventListener('click', async () => {

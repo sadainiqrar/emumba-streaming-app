@@ -25,7 +25,7 @@ export class StreamService {
     const newStream = this.streamRepository.create(createStreamDto);
     const stream = await this.streamRepository.save(newStream);
     // Add the encoding task to the queue
-    this.liveStreamQueue.add('convert', { id: stream.id });
+    // this.liveStreamQueue.add('convert', { id: stream.id });
     return stream;
   }
 
@@ -44,11 +44,11 @@ export class StreamService {
     // }
 
     // Add the upload and conversion task to the queue
-    await this.streamQueue.add(
-      'convert',
-      { id, chunkPath: inputFilePath },
-      { delay: 1000 }
-    );
+    // await this.streamQueue.add(
+    //   'convert',
+    //   { id, chunkPath: inputFilePath },
+    //   { delay: 1000 }
+    // );
     return stream;
   }
 

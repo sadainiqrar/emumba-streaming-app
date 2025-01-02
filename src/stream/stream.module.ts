@@ -7,6 +7,7 @@ import { StreamController } from './stream.controller';
 import { Stream } from './entities/stream.entity';
 import { StreamProcessor } from './stream.processor';
 import { LiveStreamProcessor } from './liveStream.processor';
+import { StreamGateway } from './stream.gateway';
 
 @Module({
   imports: [
@@ -19,6 +20,6 @@ import { LiveStreamProcessor } from './liveStream.processor';
     ),
   ],
   controllers: [StreamController],
-  providers: [StreamService, StreamProcessor, LiveStreamProcessor],
+  providers: [StreamGateway, StreamService, StreamProcessor, LiveStreamProcessor],
 })
 export class StreamModule {}
