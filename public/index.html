@@ -228,6 +228,7 @@
             streamElement.className = 'stream';
             streamElement.innerHTML = `
             <h3>${stream.title}</h3>
+            <p${stream.id}></p>
             <button onclick="watchStream('${stream.id}')">Watch</button>
             <button onclick="deleteStream('${stream.id}')">Delete</button>
           `;

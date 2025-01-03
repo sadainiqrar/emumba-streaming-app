@@ -17,12 +17,16 @@ export class StreamService {
   constructor(
     @InjectRepository(Stream)
     private readonly streamRepository: Repository<Stream>,
-    @InjectQueue('stream') private readonly streamQueue: Queue
+    @InjectQueue('stream') private readonly streamQueue: Queue,
+    @InjectQueue('liveStream') private readonly liveStreamQueue: Queue
   ) {}
 
   async create(createStreamDto: CreateStreamDto): Promise<Stream> {
     const newStream = this.streamRepository.create(createStreamDto);
-    return await this.streamRepository.save(newStream);
+    const stream = await this.streamRepository.save(newStream);
+    // Add the encoding task to the queue
+    // this.liveStreamQueue.add('convert', { id: stream.id });
+    return stream;
   }
 
   async endStream(id: string): Promise<Stream> {
@@ -40,11 +44,11 @@ export class StreamService {
     // }
 
     // Add the upload and conversion task to the queue
-    await this.streamQueue.add(
-      'convert',
-      { id, chunkPath: inputFilePath },
-      { delay: 1000 }
-    );
+    // await this.streamQueue.add(
+    //   'convert',
+    //   { id, chunkPath: inputFilePath },
+    //   { delay: 1000 }
+    // );
     return stream;
   }
 
@@ -132,5 +136,44 @@ export class StreamService {
         console.error('Error in HLS stream:', err);
       })
       .run();
+  }
+
+  async encodeLiveStream(streamId: string) {
+    const outputDir = path.join(__dirname, '..', '..', 'streams', streamId);
+    const output = path.join(outputDir, 'index.m3u8');
+    // Ensure the output directory exists
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
+    try {
+      ffmpeg(`rtmp://localhost/live/${streamId}`)
+        .outputOptions([
+          '-preset veryfast',
+          '-g 50',
+          '-sc_threshold 0',
+          '-map 0:0',
+          '-map 0:1',
+          '-map 0:0',
+          '-map 0:1',
+          '-s:v:0 640x360',
+          '-b:v:0 800k',
+          '-s:v:1 1280x720',
+          '-b:v:1 3000k',
+          '-c:v libx264',
+          '-c:a aac',
+          '-ar 48000',
+          '-b:a 128k',
+          '-f hls',
+          '-hls_time 6',
+          '-hls_playlist_type event',
+          '-hls_segment_filename',
+          path.join(outputDir, '%03d.ts'),
+        ])
+        .output(output)
+        .run();
+    } catch {
+      console.error('encoding error');
+    }
   }
 }

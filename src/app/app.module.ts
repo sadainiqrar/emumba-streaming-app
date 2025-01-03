@@ -15,6 +15,7 @@ import { User } from 'src/user/entities/user.entity';
 import { Stream } from 'src/stream/entities/stream.entity';
 import { Chat } from 'src/chat/entities/chat.entity';
 import { ChatModule } from 'src/chat/chat.module';
+import { MediaServerModule } from 'src/mediaServer/mediaServer.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { ChatModule } from 'src/chat/chat.module';
     UserModule,
     StreamModule,
     ChatModule,
+    MediaServerModule,
   ],
   controllers: [AppController, FrontendController],
   providers: [AppService],
