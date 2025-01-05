@@ -29,10 +29,12 @@ export class StreamService {
     return stream;
   }
 
-  async endStream(id: string): Promise<Stream> {
+  async endStream(id: string, data: UpdateStreamDto): Promise<Stream> {
     const stream = await this.findOne(id);
     stream.status = 'completed';
     stream.endedAt = new Date();
+    stream.duration = data.duration
+
     await this.streamRepository.save(stream);
 
     const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
