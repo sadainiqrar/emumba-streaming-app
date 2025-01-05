@@ -37,6 +37,11 @@ export class WebSocketJwtGuard implements CanActivate {
 
   static validateToken(client: Socket) {
     const { authorization } = client.handshake.headers
+
+    if (!authorization) {
+      throw new ForbiddenException('You are not authorized to access this resource.');
+    }
+
     const token: string = authorization.split(' ')[1];
     const payload = verify(token, process.env.JWT_SECRET);
     
