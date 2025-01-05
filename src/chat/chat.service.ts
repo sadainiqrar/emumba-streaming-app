@@ -44,6 +44,13 @@ export class ChatService {
     return await this.chatRepository.find({
       where: { stream: { id: streamId } },
       relations: ['user', 'stream'],
+      select: {
+        id: true,
+        message: true,
+        sentAt: true,
+        user: { id: true },
+        stream: { id: true },
+      }
     });
   }
 }
