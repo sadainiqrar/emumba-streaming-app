@@ -8,20 +8,29 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { UseGuards } from '@nestjs/common';
 
 import { CreateChatDto } from './dto/create-chat.dto';
 import { ChatService } from './chat.service';
+import { WebSocketJwtGuard } from 'src/utils/Guards';
+import { WebSocketAuthMiddleware } from 'src/common/middleware/websocket-auth.middleware';
 
 @WebSocketGateway({
+  namespace: 'chat',
   cors: {
     origin: '*',
   },
 })
+@UseGuards(WebSocketJwtGuard)
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
 
   constructor(private readonly chatService: ChatService) {}
+
+  afterInit(client: Socket) {
+    client.use((WebSocketAuthMiddleware() as any))
+  }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);

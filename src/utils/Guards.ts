@@ -1,4 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
+import { Socket } from 'socket.io';
+import { verify } from 'jsonwebtoken';
 import { Role } from './enums';
 
 @Injectable()
@@ -17,5 +19,32 @@ export class RolesGuard implements CanActivate {
     }
 
     throw new ForbiddenException('You can only access your own record.');
+  }
+}
+
+@Injectable()
+export class WebSocketJwtGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    if (context.getType() !== 'ws') {
+      return true
+    }
+
+    const client: Socket = context.switchToWs().getClient();
+    WebSocketJwtGuard.validateToken(client);
+
+    return true
+  } 
+
+  static validateToken(client: Socket) {
+    const { authorization } = client.handshake.headers
+
+    if (!authorization) {
+      throw new ForbiddenException('You are not authorized to access this resource.');
+    }
+
+    const token: string = authorization.split(' ')[1];
+    const payload = verify(token, process.env.JWT_SECRET);
+    
+    return payload
   }
 }

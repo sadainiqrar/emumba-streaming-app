@@ -9,22 +9,28 @@ import {
 } from '@nestjs/websockets';
 import { spawn, ChildProcessWithoutNullStreams } from 'child_process';
 import { Server, Socket } from 'socket.io';
+import { UseGuards } from '@nestjs/common';
 import { StreamService } from './stream.service';
-
-import * as fs from 'fs';
-import * as path from 'path';
+import { WebSocketJwtGuard } from 'src/utils/Guards';
+import { WebSocketAuthMiddleware } from 'src/common/middleware/websocket-auth.middleware';
 
 @WebSocketGateway({
+  namespace: 'stream',
   cors: {
     origin: '*',
   },
 })
+@UseGuards(WebSocketJwtGuard)
 export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer()
   server: Server;
   private ffmpegProcess: ChildProcessWithoutNullStreams;
 
   constructor(private readonly streamService: StreamService) {}
+
+  afterInit(client: Socket) {
+    client.use((WebSocketAuthMiddleware() as any))
+  }
 
   handleConnection(client: Socket) {
     console.log(`Client connected: ${client.id}`);
