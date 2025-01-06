@@ -72,22 +72,64 @@
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
-      const video = document.getElementById('video');
-      const messages = document.getElementById('messages');
-      const messageInput = document.getElementById('messageInput');
-      const loginButton = document.getElementById('login');
-      const logoutButton = document.getElementById('logout');
-      const createStreamButton = document.getElementById('createStream');
-      const startStreamButton = document.getElementById('startStream');
       const profileDiv = document.getElementById('profile');
       const usernameSpan = document.getElementById('username');
       const emailSpan = document.getElementById('email');
-      const streamsDiv = document.getElementById('streams');
-      const socket = io();
 
+      const loginButton = document.getElementById('login');
+      const logoutButton = document.getElementById('logout');
+
+      const video = document.getElementById('video');
+      const messages = document.getElementById('messages');
+      const messageInput = document.getElementById('messageInput');
+      
+      const createStreamButton = document.getElementById('createStream');
+      const startStreamButton = document.getElementById('startStream');
+      const streamsDiv = document.getElementById('streams');
+      
+      let streamId = null;
       let user = JSON.parse(localStorage.getItem('user'));
       let token = localStorage.getItem('token');
-      let streamId = null;
+      
+      const streamSocket = io('/stream', {
+        extraHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const chatSocket = io('/chat', {
+        extraHeaders: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+
+      const checkSocketConnectionEstablished = (socket) => {
+        return new Promise((resolve, reject) => {
+          socket.on('connect', () => {
+            resolve();
+          });
+          socket.on('connect_error', (error) => {
+            reject(error);
+          });
+        });
+      };
+
+      const establishSocketConnections = async () => {
+        try {
+          await checkSocketConnectionEstablished(streamSocket);
+          await checkSocketConnectionEstablished(chatSocket);
+
+          alert('Connected to stream & chat socket')
+          console.log('Connected to stream & chat socket');
+        } catch (error) {
+          alert('Failed to establish socket connection')
+          console.error('Failed to establish socket connection', error);
+        }
+      };
+
+      // Check the socket connection
+      if (token) {
+        establishSocketConnections();
+      }
 
       async function fetchProfile() {
         if (token) {
@@ -127,13 +169,16 @@
         user = null;
         token = null;
         streamId = null;
+
         localStorage.removeItem('user');
         localStorage.removeItem('token');
+        
         profileDiv.style.display = 'none';
         loginButton.style.display = 'block';
         logoutButton.style.display = 'none';
         createStreamButton.disabled = true;
         startStreamButton.disabled = true;
+       
         stopStream();
       }
 
@@ -148,6 +193,7 @@
             Authorization: `Bearer ${token}`,
           },
         });
+
         if (response.ok) {
           startStream();
         } else {
@@ -172,7 +218,7 @@
         }
 
         // Handle chat messages
-        socket.on('receiveMessage', (message) => {
+        chatSocket.on('receiveMessage', (message) => {
           const messageElement = document.createElement('div');
           messageElement.textContent = message;
           messages.appendChild(messageElement);
@@ -181,20 +227,21 @@
         messageInput.addEventListener('keypress', (event) => {
           if (event.key === 'Enter') {
             const message = messageInput.value;
-            socket.emit('sendMessage', { streamId, message });
+            chatSocket.emit('sendMessage', { streamId, message });
             messageInput.value = '';
           }
         });
 
         // Join stream
-        socket.emit('joinStream', streamId);
+        chatSocket.emit('joinStream', streamId);
       }
 
       function stopStream() {
         video.pause();
         video.src = '';
         messages.innerHTML = '';
-        socket.emit('leaveStream', streamId);
+
+        chatSocket.emit('leaveStream', streamId);
       }
 
       async function deleteStream(id) {
@@ -204,22 +251,29 @@
             Authorization: `Bearer ${token}`,
           },
         });
+
         if (response.ok) {
           fetchStreams();
         } else {
           alert('Failed to delete stream');
         }
       }
+      
+      function watchStream(id) {
+        window.location.href = `/api/frontend/watch?streamId=${id}`;
+      }
 
       async function fetchStreams() {
         if (!token) {
           return;
         }
+        
         const response = await fetch('/api/streams', {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
+
         if (response.ok) {
           const streams = await response.json();
           streamsDiv.innerHTML = '';
@@ -235,10 +289,6 @@
             streamsDiv.appendChild(streamElement);
           });
         }
-      }
-
-      function watchStream(id) {
-        window.location.href = `/api/frontend/watch?streamId=${id}`;
       }
 
       loginButton.addEventListener('click', handleLogin);
