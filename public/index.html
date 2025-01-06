@@ -118,10 +118,8 @@
           await checkSocketConnectionEstablished(streamSocket);
           await checkSocketConnectionEstablished(chatSocket);
 
-          alert('Connected to stream & chat socket')
           console.log('Connected to stream & chat socket');
         } catch (error) {
-          alert('Failed to establish socket connection')
           console.error('Failed to establish socket connection', error);
         }
       };
