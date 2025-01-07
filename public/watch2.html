@@ -46,9 +46,48 @@
     const video = document.getElementById('video');
     const messages = document.getElementById('messages');
     const messageInput = document.getElementById('messageInput');
-    const socket = io();
     const urlParams = new URLSearchParams(window.location.search);
     const streamId = urlParams.get('streamId');
+
+    let token = localStorage.getItem('token');
+
+    const streamSocket = io('/stream', {
+      extraHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    const chatSocket = io('/chat', {
+      extraHeaders: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    const checkSocketConnectionEstablished = (socket) => {
+      return new Promise((resolve, reject) => {
+        socket.on('connect', () => {
+          resolve();
+        });
+        socket.on('connect_error', (error) => {
+          reject(error);
+        });
+      });
+    };
+
+    const establishSocketConnections = async () => {
+      try {
+        await checkSocketConnectionEstablished(streamSocket);
+        await checkSocketConnectionEstablished(chatSocket);
+
+        console.log('Connected to stream & chat socket');
+      } catch (error) {
+        console.error('Failed to establish socket connection', error);
+      }
+    };
+
+    // Check the socket connection
+    if (token) {
+      establishSocketConnections();
+    }
 
     function startStream() {
       // Load HLS stream
@@ -67,7 +106,7 @@
       }
 
       // Handle chat messages
-      socket.on('receiveMessage', (message) => {
+      chatSocket.on('receiveMessage', (message) => {
         const messageElement = document.createElement('div');
         messageElement.textContent = message;
         messages.appendChild(messageElement);
@@ -76,13 +115,13 @@
       messageInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
           const message = messageInput.value;
-          socket.emit('sendMessage', { streamId, message });
+          chatSocket.emit('sendMessage', { streamId, message });
           messageInput.value = '';
         }
       });
 
       // Join stream
-      socket.emit('joinStream', streamId);
+      chatSocket.emit('joinStream', streamId);
     }
 
     startStream();

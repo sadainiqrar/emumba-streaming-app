@@ -33,16 +33,16 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    console.log(`chat:: socket connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    console.log(`chat:: socket disconnected: ${client.id}`);
     const rooms = Array.from(client.rooms.values());
     rooms.forEach((room) => {
       if (room !== client.id) {
         client.leave(room);
-        console.log(`Client ${client.id} left room ${room}`);
+        console.log(`chat:: client ${client.id} left room ${room}`);
       }
     });
   }
@@ -72,25 +72,5 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const newChat = await this.chatService.create(createChatDto);
     this.server.to(createChatDto.streamId).emit('receiveMessage', newChat);
     console.log(`New message sent to stream ${createChatDto.streamId}`);
-  }
-
-  @SubscribeMessage('startStream')
-  async handleStartStream(
-    @MessageBody() streamId: string,
-    @ConnectedSocket() client: Socket
-  ) {
-    client.join(streamId);
-    console.log(`Stream started with ID ${streamId}`);
-    this.server.to(streamId).emit('streamStarted', { streamId });
-  }
-
-  @SubscribeMessage('endStream')
-  async handleEndStream(
-    @MessageBody() streamId: string,
-    @ConnectedSocket() client: Socket
-  ) {
-    client.leave(streamId);
-    console.log(`Stream ended with ID ${streamId}`);
-    this.server.to(streamId).emit('streamEnded', { streamId });
   }
 }

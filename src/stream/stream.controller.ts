@@ -64,8 +64,8 @@ export class StreamController {
     this.streamService.uploadStream(id, file);
   }
 
-  @Post(':id/end')
-  async endStream(@Param('id') id: string) {
-    return this.streamService.endStream(id);
+  @Patch(':id/end')
+  async endStream(@Param('id') id: string, @Body() updateStreamDto: UpdateStreamDto) {
+    return this.streamService.endStream(id, { duration: updateStreamDto.duration });
   }
 }

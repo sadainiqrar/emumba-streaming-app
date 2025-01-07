@@ -33,28 +33,18 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    console.log(`stream:: socket connected: ${client.id}`);
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    console.log(`stream:: socket disconnected: ${client.id}`);
     const rooms = Array.from(client.rooms.values());
     rooms.forEach((room) => {
       if (room !== client.id) {
         client.leave(room);
-        console.log(`Client ${client.id} left room ${room}`);
+        console.log(`stream:: client ${client.id} left room ${room}`);
       }
     });
-  }
-
-  @SubscribeMessage('joinStream')
-  async handleJoinStream(
-    @MessageBody() streamId: string,
-    @ConnectedSocket() client: Socket
-  ) {
-    client.join(streamId);
-    console.log(`Client ${client.id} joined stream ${streamId}`);
-    client.emit('joinedStream', `You joined stream ${streamId}`);
   }
 
   @SubscribeMessage('videoChunk')
@@ -70,16 +60,6 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
     } else {
       console.error('FFmpeg process is not running');
     }
-  }
-
-  @SubscribeMessage('leaveStream')
-  async handleLeaveStream(
-    @MessageBody() streamId: string,
-    @ConnectedSocket() client: Socket
-  ) {
-    client.leave(streamId);
-    console.log(`Client ${client.id} left stream ${streamId}`);
-    client.emit('leftStream', `You left stream ${streamId}`);
   }
 
   @SubscribeMessage('startStream')
