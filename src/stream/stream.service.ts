@@ -58,6 +58,10 @@ export class StreamService {
     return await this.streamRepository.find();
   }
 
+  async findByStatus(status: 'active' | 'completed'): Promise<Stream[]> {
+    return this.streamRepository.find({ where: { status } });
+  }
+
   async findOne(id: string): Promise<Stream> {
     const stream = await this.streamRepository.findOne({ where: { id } });
     if (!stream) {
