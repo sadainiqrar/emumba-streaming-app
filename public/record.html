@@ -34,14 +34,14 @@
         padding: 10px;
       }
       #chat .new-message {
-      background-color: #f9f9f9;
-      padding: 10px;
-      margin: 5px 0;
-    }
-    #chat .new-message.isMine {
-      background-color: lightgrey;
-      text-align: right;
-    }
+        background-color: #f9f9f9;
+        padding: 10px;
+        margin: 5px 0;
+      }
+      #chat .new-message.isMine {
+        background-color: lightgrey;
+        text-align: right;
+      }
     </style>
   </head>
   <body>
@@ -54,7 +54,12 @@
     </div>
     <div id="chat">
       <div id="messages"></div>
-      <input type="text" id="messageInput" placeholder="Type a message..." />
+      <input
+        type="text"
+        id="messageInput"
+        placeholder="Type a message..."
+        disabled
+      />
     </div>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script>
@@ -64,24 +69,25 @@
       const stopRecordingButton = document.getElementById('stopRecording');
       const messages = document.getElementById('messages');
       const messageInput = document.getElementById('messageInput');
-      const senderId = `User#${Math.floor(Math.random() * 1000) + 1}`;
       const recordedChunks = [];
 
       let startTime = Date.now();
       let mediaRecorder;
       let stream;
       let streamId;
-      let token = localStorage.getItem('token');
+      let token = localStorage.getItem('token');      
+      const senderId = `User#${Math.floor(Math.random() * 1000) + 1}`;
+   
 
       const streamSocket = io('/stream', {
         extraHeaders: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
       const chatSocket = io('/chat', {
         extraHeaders: {
-          Authorization: `Bearer ${token}`
-        }
+          Authorization: `Bearer ${token}`,
+        },
       });
 
       const checkSocketConnectionEstablished = (socket) => {
@@ -128,6 +134,23 @@
           streamId = data.id;
           startRecordingButton.disabled = false;
           createStreamButton.disabled = true;
+          messageInput.disabled = false;
+
+          // Handle chat messages
+          chatSocket.on('receiveMessage', (payload) => {
+            const { streamId, message, user } = payload;
+            const messageElement = document.createElement('div');
+            messageElement.innerText = `${message.sender}: ${message.value}`;
+            messageElement.className = 'new-message';
+            if (message.sender == senderId) {
+              messageElement.classList.add('isMine');
+            }
+            console.debug('New mEssage recieved', payload);
+            messages.appendChild(messageElement);
+          });
+
+          // Join stream
+          chatSocket.emit('joinStream', streamId);
         } else {
           alert('Failed to create stream');
         }
@@ -152,16 +175,6 @@
               streamSocket.emit('videoChunk', { streamId, chunk: arrayBuffer });
             };
             reader.readAsArrayBuffer(event.data);
-            // const formData = new FormData();
-            // formData.append('file', event.data, 'video.webm');
-
-            // await fetch(`/api/streams/${streamId}/upload`, {
-            //   method: 'POST',
-            //   headers: {
-            //     Authorization: `Bearer ${token}`,
-            //   },
-            //   body: formData,
-            // });
           }
         };
         mediaRecorder.start(2000); // Send data every second
@@ -187,34 +200,19 @@
           body: JSON.stringify({ duration }),
         });
 
-        streamSocket.emit('endStream', streamId)
+        streamSocket.emit('endStream', streamId);
+        messageInput.disabled = true;
         stopRecordingButton.disabled = true;
         createStreamButton.disabled = false;
       });
 
-      // Handle chat messages
-      chatSocket.on('receiveMessage', (payload) => {
-        const {streamId, message, user} = payload;
-        const messageElement = document.createElement('div');
-        messageElement.innerText = `${message.sender}: ${message.value}`;
-        messageElement.className = 'new-message';
-        if(message.sender == senderId) {
-          messageElement.classList.add('isMine');
-        }
-        console.debug('New mEssage recieved', payload);
-        messages.appendChild(messageElement);
-      });
-
       messageInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-          const message = {value: messageInput.value, sender: senderId};
-          chatSocket.emit('sendMessage', { streamId, message });
-          messageInput.value = '';
-        }
-      });
-
-      // Join stream
-      chatSocket.emit('joinStream', streamId);
+            if (event.key === 'Enter') {
+              const message = { value: messageInput.value, sender: senderId };
+              chatSocket.emit('sendMessage', { streamId, message });
+              messageInput.value = '';
+            }
+          });
     </script>
   </body>
 </html>

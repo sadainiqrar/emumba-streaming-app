@@ -30,19 +30,18 @@
         padding: 10px;
       }
       #chat .new-message {
-      background-color: #f9f9f9;
-      padding: 10px;
-      margin: 5px 0;
-    }
-    #chat .new-message.isMine {
-      background-color: lightgrey;
-      text-align: right;
-    }
-
+        background-color: #f9f9f9;
+        padding: 10px;
+        margin: 5px 0;
+      }
+      #chat .new-message.isMine {
+        background-color: lightgrey;
+        text-align: right;
+      }
     </style>
   </head>
   <body>
-    <h1>Watch Stream</h1>
+    <h1>Live Stream</h1>
     <video id="video" controls></video>
     <div id="chat">
       <div id="messages"></div>
@@ -58,45 +57,45 @@
       const messageInput = document.getElementById('messageInput');
       const urlParams = new URLSearchParams(window.location.search);
       const streamId = urlParams.get('streamId');
-      const senderId = `User#${Math.floor(Math.random() * 1000) + 1}`;
       let token = localStorage.getItem('token');
+      const senderId = `User#${Math.floor(Math.random() * 1000) + 1}`;
       const streamSocket = io('/stream', {
-      extraHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-    const chatSocket = io('/chat', {
-      extraHeaders: {
-        Authorization: `Bearer ${token}`
-      }
-    });
-
-    const checkSocketConnectionEstablished = (socket) => {
-      return new Promise((resolve, reject) => {
-        socket.on('connect', () => {
-          resolve();
-        });
-        socket.on('connect_error', (error) => {
-          reject(error);
-        });
+        extraHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
       });
-    };
+      const chatSocket = io('/chat', {
+        extraHeaders: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
 
-    const establishSocketConnections = async () => {
-      try {
-        await checkSocketConnectionEstablished(streamSocket);
-        await checkSocketConnectionEstablished(chatSocket);
+      const checkSocketConnectionEstablished = (socket) => {
+        return new Promise((resolve, reject) => {
+          socket.on('connect', () => {
+            resolve();
+          });
+          socket.on('connect_error', (error) => {
+            reject(error);
+          });
+        });
+      };
 
-        console.log('Connected to stream & chat socket');
-      } catch (error) {
-        console.error('Failed to establish socket connection', error);
+      const establishSocketConnections = async () => {
+        try {
+          await checkSocketConnectionEstablished(streamSocket);
+          await checkSocketConnectionEstablished(chatSocket);
+
+          console.log('Connected to stream & chat socket');
+        } catch (error) {
+          console.error('Failed to establish socket connection', error);
+        }
+      };
+
+      // Check the socket connection
+      if (token) {
+        establishSocketConnections();
       }
-    };
-
-    // Check the socket connection
-    if (token) {
-      establishSocketConnections();
-    }
 
       function startStream() {
         if (flvjs.isSupported()) {
@@ -108,26 +107,26 @@
           flvPlayer.load();
           flvPlayer.play();
         }
-       // Handle chat messages
-      chatSocket.on('receiveMessage', (payload) => {
-        const {streamId, message, user} = payload;
-        const messageElement = document.createElement('div');
-        messageElement.innerText = `${message.sender}: ${message.value}`;
-        messageElement.className = 'new-message';
-        if(message.sender == senderId) {
-          messageElement.classList.add('isMine');
-        }
-        console.debug('New mEssage recieved', payload);
-        messages.appendChild(messageElement);
-      });
+        // Handle chat messages
+        chatSocket.on('receiveMessage', (payload) => {
+          const { streamId, message, user } = payload;
+          const messageElement = document.createElement('div');
+          messageElement.innerText = `${message.sender}: ${message.value}`;
+          messageElement.className = 'new-message';
+          if (message.sender == senderId) {
+            messageElement.classList.add('isMine');
+          }
+          console.debug('New mEssage recieved', payload);
+          messages.appendChild(messageElement);
+        });
 
-      messageInput.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter') {
-          const message = {value: messageInput.value, sender: senderId};
-          chatSocket.emit('sendMessage', { streamId, message });
-          messageInput.value = '';
-        }
-      });
+        messageInput.addEventListener('keypress', (event) => {
+          if (event.key === 'Enter') {
+            const message = { value: messageInput.value, sender: senderId };
+            chatSocket.emit('sendMessage', { streamId, message });
+            messageInput.value = '';
+          }
+        });
         // Join stream
         chatSocket.emit('joinStream', streamId);
       }
