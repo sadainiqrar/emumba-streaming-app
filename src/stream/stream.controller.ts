@@ -19,7 +19,6 @@ import { StreamService } from './stream.service';
 import { CreateStreamDto } from './dto/create-stream.dto';
 import { UpdateStreamDto } from './dto/update-stream.dto';
 
-
 @Controller('streams')
 @UseGuards(AuthGuard('jwt'))
 export class StreamController {
@@ -34,6 +33,12 @@ export class StreamController {
   @Get()
   findAll() {
     return this.streamService.findAll();
+  }
+
+  // please write code to get the stream by status
+  @Get('status/:status')
+  findByStatus(@Param('status') status: 'active' | 'completed') {
+    return this.streamService.findByStatus(status);
   }
 
   @Get(':id')
