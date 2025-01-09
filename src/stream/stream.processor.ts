@@ -9,7 +9,5 @@ export class StreamProcessor {
   @Process('convert')
   async handleConversion(job: Job) {
     
-    const { id, chunkPath } = job.data;
-    await this.streamService.startHlsStream(id, chunkPath);
   }
 }

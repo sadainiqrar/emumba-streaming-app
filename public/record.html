@@ -33,6 +33,15 @@
         width: calc(100% - 22px);
         padding: 10px;
       }
+      #chat .new-message {
+      background-color: #f9f9f9;
+      padding: 10px;
+      margin: 5px 0;
+    }
+    #chat .new-message.isMine {
+      background-color: lightgrey;
+      text-align: right;
+    }
     </style>
   </head>
   <body>
@@ -55,6 +64,7 @@
       const stopRecordingButton = document.getElementById('stopRecording');
       const messages = document.getElementById('messages');
       const messageInput = document.getElementById('messageInput');
+      const senderId = `User#${Math.floor(Math.random() * 1000) + 1}`;
       const recordedChunks = [];
 
       let startTime = Date.now();
@@ -183,15 +193,21 @@
       });
 
       // Handle chat messages
-      chatSocket.on('receiveMessage', (message) => {
+      chatSocket.on('receiveMessage', (payload) => {
+        const {streamId, message, user} = payload;
         const messageElement = document.createElement('div');
-        messageElement.textContent = message;
+        messageElement.innerText = `${message.sender}: ${message.value}`;
+        messageElement.className = 'new-message';
+        if(message.sender == senderId) {
+          messageElement.classList.add('isMine');
+        }
+        console.debug('New mEssage recieved', payload);
         messages.appendChild(messageElement);
       });
 
       messageInput.addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
-          const message = messageInput.value;
+          const message = {value: messageInput.value, sender: senderId};
           chatSocket.emit('sendMessage', { streamId, message });
           messageInput.value = '';
         }

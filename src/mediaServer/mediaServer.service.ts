@@ -23,7 +23,8 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
       http: {
         port: 8080,
         allow_origin: '*',
-        mediaroot: './uploads',
+        mediaroot: path.resolve(__dirname, '../../streams'),
+        webroot: './public'
       },
       trans: {
         ffmpeg: require('@ffmpeg-installer/ffmpeg').path, // Path to FFmpeg from ffmpeg-fluent
@@ -37,13 +38,16 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
           },
         ],
       },
-      MediaRoot: './uploads'
+      mediaRoot: path.resolve(__dirname, '../../streams')
     };
     
     this.nms = new NodeMediaServer(config);
+    if (!fs.existsSync(config.http.mediaroot)) {
+      fs.mkdirSync(config.http.mediaroot, { recursive: true });
+    }
     this.nms.run();
     
-    console.log('RTMP server started on port 1935');
+    console.log('NMS server started on port 1935');
     // this.nms.on('prePublish', async (id, StreamPath, args) => {
     //   // TODO: add validation here
     //   console.log('prePublish args', { id, StreamPath, args });

@@ -8,8 +8,6 @@ export class LiveStreamProcessor {
 
   @Process('convert')
   async handleLiveConversion(job: Job) {
-    
-    const { id } = job.data;
-    await this.streamService.encodeLiveStream(id);
+  
   }
 }

@@ -13,6 +13,8 @@ import { UseGuards } from '@nestjs/common';
 import { StreamService } from './stream.service';
 import { WebSocketJwtGuard } from 'src/utils/Guards';
 import { WebSocketAuthMiddleware } from 'src/common/middleware/websocket-auth.middleware';
+import path from 'path';
+import fs from 'fs';
 
 @WebSocketGateway({
   namespace: 'stream',
@@ -67,6 +69,13 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @MessageBody() streamId: string,
     @ConnectedSocket() client: Socket
   ) {
+     const outputDir = path.join(__dirname, '..', '..', 'streams', streamId);
+    const outputPath = path.join(outputDir, 'index.m3u8');
+
+    if (!fs.existsSync(outputDir)) {
+      fs.mkdirSync(outputDir, { recursive: true });
+    }
+
     client.join(streamId);
     console.log(`Stream started with ID ${streamId}`);
     this.server.to(streamId).emit('streamStarted', { streamId });
@@ -85,6 +94,21 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
       '-f',
       'flv',
       `rtmp://localhost:1935/live/${streamId}`, // RTMP server URL
+      '-c:v',
+      'libx264',
+      '-preset',
+      'veryfast',
+      '-maxrate',
+      '1500k',
+      '-bufsize',
+      '3000k',
+      '-f',
+      'hls',
+      '-hls_time',
+      '2', // Duration of each segment in seconds
+      '-hls_playlist_type',
+      'event',
+      outputPath // Output HLS playlist file
     ]);
 
     // this.streamService.encodeLiveStream(streamId)
@@ -98,6 +122,7 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     this.ffmpegProcess.on('close', (code) => {
       console.log(`FFmpeg process closed with code ${code}`);
+      this.ffmpegProcess.kill('SIGINT');
     });
   }
 
@@ -113,7 +138,6 @@ export class StreamGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // Stop the ffmpeg process
     if (this.ffmpegProcess) {
       this.ffmpegProcess.stdin.end();
-      this.ffmpegProcess.kill('SIGINT');
     }
   }
 }

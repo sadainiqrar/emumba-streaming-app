@@ -12,6 +12,11 @@ export class FrontendController {
 
   @Get('watch')
   getWatchPage(@Res() res: Response) {
+    res.sendFile(join(__dirname, '..', '..', 'public', 'watch2.html'));
+  }
+  
+  @Get('live')
+  getLiveStream(@Res() res: Response) {
     res.sendFile(join(__dirname, '..', '..', 'public', 'watch.html'));
   }
   

@@ -24,8 +24,6 @@ export class StreamService {
   async create(createStreamDto: CreateStreamDto): Promise<Stream> {
     const newStream = this.streamRepository.create(createStreamDto);
     const stream = await this.streamRepository.save(newStream);
-    // Add the encoding task to the queue
-    // this.liveStreamQueue.add('convert', { id: stream.id });
     return stream;
   }
 
@@ -36,21 +34,6 @@ export class StreamService {
     stream.duration = data.duration
 
     await this.streamRepository.save(stream);
-
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
-    const inputFilePath = path.join(uploadsDir, `${id}.webm`);
-    // const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
-    // if (fs.existsSync(uploadsDir)) {
-    //   fs.rmdirSync(uploadsDir, { recursive: true });
-    //   console.log(`Uploads directory ${uploadsDir} removed`);
-    // }
-
-    // Add the upload and conversion task to the queue
-    // await this.streamQueue.add(
-    //   'convert',
-    //   { id, chunkPath: inputFilePath },
-    //   { delay: 1000 }
-    // );
     return stream;
   }
 
@@ -77,105 +60,7 @@ export class StreamService {
     await this.streamRepository.remove(stream);
   }
 
-  async uploadStream(id: string, file: any) {
-    // const uploadsDir = path.join(__dirname, '..', '..', 'uploads', id);
+  
 
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads');
-    // Ensure the uploads directory exists
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-
-    // const chunkPath = path.join(uploadsDir, `${Date.now()}.webm`);
-    // fs.writeFileSync(chunkPath, file.buffer);
-    const inputFilePath = path.join(uploadsDir, `${id}.webm`);
-
-    fs.appendFile(inputFilePath, file.buffer, (err) => {
-      if (err) throw err;
-      console.log('The "data to append" was appended to file!');
-    });
-  }
-
-  async startHlsStream(streamId: string, chunkPath: string) {
-    const stream = await this.findOne(streamId);
-    const outputDir = path.join(__dirname, '..', '..', 'streams', streamId);
-    const output = path.join(outputDir, 'index.m3u8');
-
-    // Ensure the output directory exists
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    console.log('herehere" ', { stream, chunkPath, output });
-    ffmpeg(chunkPath)
-      .outputOptions([
-        '-preset veryfast',
-        '-g 50',
-        '-sc_threshold 0',
-        '-map 0:0',
-        '-map 0:1',
-        '-map 0:0',
-        '-map 0:1',
-        '-s:v:0 640x360',
-        '-b:v:0 800k',
-        '-s:v:1 1280x720',
-        '-b:v:1 3000k',
-        '-c:v libx264',
-        '-c:a aac',
-        '-ar 48000',
-        '-b:a 128k',
-        '-f hls',
-        '-hls_time 6',
-        '-hls_playlist_type event',
-        '-hls_segment_filename',
-        path.join(outputDir, '%03d.ts'),
-      ])
-      .output(output)
-      .on('end', () => {
-        console.log('HLS stream ended');
-      })
-      .on('error', (err) => {
-        console.error('Error in HLS stream:', err);
-      })
-      .run();
-  }
-
-  async encodeLiveStream(streamId: string) {
-    const outputDir = path.join(__dirname, '..', '..', 'streams', streamId);
-    const output = path.join(outputDir, 'index.m3u8');
-    // Ensure the output directory exists
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
-    }
-
-    try {
-      ffmpeg(`rtmp://localhost/live/${streamId}`)
-        .outputOptions([
-          '-preset veryfast',
-          '-g 50',
-          '-sc_threshold 0',
-          '-map 0:0',
-          '-map 0:1',
-          '-map 0:0',
-          '-map 0:1',
-          '-s:v:0 640x360',
-          '-b:v:0 800k',
-          '-s:v:1 1280x720',
-          '-b:v:1 3000k',
-          '-c:v libx264',
-          '-c:a aac',
-          '-ar 48000',
-          '-b:a 128k',
-          '-f hls',
-          '-hls_time 6',
-          '-hls_playlist_type event',
-          '-hls_segment_filename',
-          path.join(outputDir, '%03d.ts'),
-        ])
-        .output(output)
-        .run();
-    } catch {
-      console.error('encoding error');
-    }
-  }
+  
 }

@@ -49,20 +49,7 @@ export class StreamController {
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.streamService.remove(id);
-  }
-
-  @Post(':id/start')
-  startStream(@Param('id') id: string) {
-    const input = `./streams/test.mp4`; // Replace with actual input file path
-    return this.streamService.startHlsStream(id, input);
-  }
-
-
-  @Post(':id/upload')
-  @UseInterceptors(FileInterceptor('file'))
-  uploadStream(@Param('id') id: string, @UploadedFile() file: any) {
-    this.streamService.uploadStream(id, file);
-  }
+  }  
 
   @Patch(':id/end')
   async endStream(@Param('id') id: string, @Body() updateStreamDto: UpdateStreamDto) {

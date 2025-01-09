@@ -14,11 +14,6 @@
         margin: 20px auto;
         display: block;
       }
-      #chat {
-        width: 100%;
-        max-width: 600px;
-        margin: 20px auto;
-      }
       #messages {
         border: 1px solid #ccc;
         padding: 10px;
@@ -59,16 +54,11 @@
     <button id="login">Login with Google</button>
     <button id="logout">Logout</button>
     <button id="createStream" disabled>Create Stream</button>
-    <button id="startStream" disabled>Start Stream</button>
     <div id="profile">
       <h2>Welcome, <span id="username"></span></h2>
       <p>Email: <span id="email"></span></p>
     </div>
     <div id="streams"></div>
-    <div id="chat">
-      <div id="messages"></div>
-      <input type="text" id="messageInput" placeholder="Type a message..." />
-    </div>
     <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
     <script>
@@ -150,12 +140,10 @@
             loginButton.style.display = 'block';
             logoutButton.style.display = 'none';
             createStreamButton.disabled = true;
-            startStreamButton.disabled = true;
           }
         } else {
           loginButton.style.display = 'block';
           createStreamButton.disabled = true;
-          startStreamButton.disabled = true;
         }
       }
 
@@ -175,71 +163,11 @@
         loginButton.style.display = 'block';
         logoutButton.style.display = 'none';
         createStreamButton.disabled = true;
-        startStreamButton.disabled = true;
-       
         stopStream();
       }
 
       async function handleCreateStream() {
         window.location.href = `/api/frontend/record`;
-      }
-
-      async function handleStartStream() {
-        const response = await fetch(`/api/streams/${streamId}/start`, {
-          method: 'POST',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          startStream();
-        } else {
-          alert('Failed to start stream');
-        }
-      }
-
-      function startStream() {
-        // Load HLS stream
-        if (Hls.isSupported()) {
-          const hls = new Hls();
-          hls.loadSource(`/streams/${streamId}/index.m3u8`); // Replace with actual stream URL
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, function () {
-            video.play();
-          });
-        } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-          video.src = `/streams/${streamId}/index.m3u8`; // Replace with actual stream URL
-          video.addEventListener('loadedmetadata', function () {
-            video.play();
-          });
-        }
-
-        // Handle chat messages
-        chatSocket.on('receiveMessage', (message) => {
-          const messageElement = document.createElement('div');
-          messageElement.textContent = message;
-          messages.appendChild(messageElement);
-        });
-
-        messageInput.addEventListener('keypress', (event) => {
-          if (event.key === 'Enter') {
-            const message = messageInput.value;
-            chatSocket.emit('sendMessage', { streamId, message });
-            messageInput.value = '';
-          }
-        });
-
-        // Join stream
-        chatSocket.emit('joinStream', streamId);
-      }
-
-      function stopStream() {
-        video.pause();
-        video.src = '';
-        messages.innerHTML = '';
-
-        chatSocket.emit('leaveStream', streamId);
       }
 
       async function deleteStream(id) {
@@ -281,7 +209,8 @@
             streamElement.innerHTML = `
             <h3>${stream.title}</h3>
             <p${stream.id}></p>
-            <button onclick="watchStream('${stream.id}')">Watch</button>
+            <button onclick="watchStream('${stream.id}')">Watch Live</button>
+            <button onclick="replayStream('${stream.id}')">Replay Stream</button>
             <button onclick="deleteStream('${stream.id}')">Delete</button>
           `;
             streamsDiv.appendChild(streamElement);
@@ -289,10 +218,17 @@
         }
       }
 
+      function watchStream(id) {
+        window.location.href = `/api/frontend/live?streamId=${id}`;
+      }
+      
+      function replayStream(id) {
+        window.location.href = `/api/frontend/watch?streamId=${id}`;
+      }
+
       loginButton.addEventListener('click', handleLogin);
       logoutButton.addEventListener('click', handleLogout);
       createStreamButton.addEventListener('click', handleCreateStream);
-      startStreamButton.addEventListener('click', handleStartStream);
 
       // Check if user is already logged in
       fetchProfile();
