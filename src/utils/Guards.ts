@@ -33,18 +33,44 @@ export class WebSocketJwtGuard implements CanActivate {
     WebSocketJwtGuard.validateToken(client);
 
     return true
-  } 
+  }
 
   static validateToken(client: Socket) {
-    const { authorization } = client.handshake.headers
+    try {
+      const { authorization } = client.handshake.headers
 
-    if (!authorization) {
-      throw new ForbiddenException('You are not authorized to access this resource.');
+      // Log for debugging
+      console.log('WebSocketJwtGuard: Validating token from headers:', {
+        headers: client.handshake.headers,
+        hasAuthorization: !!authorization
+      });
+
+      if (!authorization) {
+        console.error('WebSocketJwtGuard: No authorization header found');
+        throw new ForbiddenException('You are not authorized to access this resource.');
+      }
+
+      // Check if the authorization header has the correct format
+      const parts = authorization.split(' ');
+      if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        console.error('WebSocketJwtGuard: Invalid authorization header format');
+        throw new ForbiddenException('Invalid authorization header format');
+      }
+
+      const token: string = parts[1];
+      if (!token) {
+        console.error('WebSocketJwtGuard: Token is empty');
+        throw new ForbiddenException('Invalid token');
+      }
+
+      // Verify the token
+      const payload = verify(token, process.env.JWT_SECRET || 'secretKey');
+      console.log('WebSocketJwtGuard: Token verified successfully', { userId: payload.id });
+
+      return payload;
+    } catch (error) {
+      console.error('WebSocketJwtGuard: Token validation error', error);
+      throw new ForbiddenException('Invalid token: ' + (error.message || 'Unknown error'));
     }
-
-    const token: string = authorization.split(' ')[1];
-    const payload = verify(token, process.env.JWT_SECRET);
-    
-    return payload
   }
 }

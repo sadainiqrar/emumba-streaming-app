@@ -14,14 +14,14 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
   onModuleInit() {
     const config = {
       rtmp: {
-        port: 1935,
+        port: parseInt(process.env.RTMP_PORT || '1935'),
         chunk_size: 60000,
         gop_cache: true,
         ping: 30,
         ping_timeout: 60,
       },
       http: {
-        port: 8080,
+        port: parseInt(process.env.MEDIA_HTTP_PORT || '8080'),
         allow_origin: '*',
         mediaroot: path.resolve(__dirname, '../../streams'),
         webroot: './public'
@@ -40,19 +40,19 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
       },
       mediaRoot: path.resolve(__dirname, '../../streams')
     };
-    
+
     this.nms = new NodeMediaServer(config);
     if (!fs.existsSync(config.http.mediaroot)) {
       fs.mkdirSync(config.http.mediaroot, { recursive: true });
     }
     this.nms.run();
-    
+
     console.log('NMS server started on port 1935');
     // this.nms.on('prePublish', async (id, StreamPath, args) => {
     //   // TODO: add validation here
     //   console.log('prePublish args', { id, StreamPath, args });
     // });
-    
+
     // this.nms.on('donePublish', (id, StreamPath, args) => {
     //   console.log('donePublish args', { id, StreamPath, args });
     // });
@@ -64,7 +64,7 @@ export class MediaServerService implements OnModuleInit, OnModuleDestroy {
     // this.nms.on('postPlay', (id, StreamPath, args) => {
     //   console.log('postPlay args', { id, StreamPath, args });
     // });
-    
+
   }
 
   onModuleDestroy() {

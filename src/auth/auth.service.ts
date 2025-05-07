@@ -20,8 +20,48 @@ export class AuthService {
   }
 
   async generateToken(user: User): Promise<{ accessToken: string }> {
-    const payload = { id: user.id, email: user.email };
-    const token = this.jwtService.sign(payload);
-    return { accessToken: token };
+    try {
+      // Include more user information in the token payload
+      const payload = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role || 'user',
+        googleId: user.googleId
+      };
+
+      console.log('Generating token for user:', {
+        id: user.id,
+        email: user.email,
+        name: user.name
+      });
+
+      // Get the JWT secret
+      const secret = process.env.JWT_SECRET || 'secretKey';
+      console.log('Using JWT secret:', secret ? '[SECRET CONFIGURED]' : 'default fallback secret');
+
+      // Sign the token with a longer expiration
+      const token = this.jwtService.sign(payload, {
+        secret: secret,
+        expiresIn: '7d' // 7 days
+      });
+
+      // Verify the token to make sure it's valid
+      try {
+        const verified = this.jwtService.verify(token, { secret });
+        console.log('Token verified successfully:', {
+          id: verified.id,
+          exp: new Date(verified.exp * 1000).toISOString()
+        });
+      } catch (verifyError) {
+        console.error('Token verification failed:', verifyError);
+        throw new Error('Failed to verify generated token: ' + verifyError.message);
+      }
+
+      return { accessToken: token };
+    } catch (error) {
+      console.error('Error generating token:', error);
+      throw new Error('Failed to generate token: ' + error.message);
+    }
   }
 }

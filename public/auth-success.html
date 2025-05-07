@@ -3,21 +3,50 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="frontend-url" content="http://localhost:5173">
   <title>Authentication Success</title>
   <script>
     window.onload = function() {
       const urlParams = new URLSearchParams(window.location.search);
       const profile = JSON.parse(decodeURIComponent(urlParams.get('profile')));
 
-      localStorage.setItem('user', JSON.stringify(profile));
-      localStorage.setItem('token', profile.accessToken);
+      // Get the frontend URL from a meta tag or use default
+      const frontendUrl = document.querySelector('meta[name="frontend-url"]')?.getAttribute('content') || 'http://localhost:5173';
 
-      window.location.href = '/api/frontend';
+      // Log for debugging
+      console.log('Auth success received profile:', profile);
+
+      // Make sure we have a valid token
+      if (!profile || !profile.accessToken) {
+        console.error('Invalid profile or missing accessToken:', profile);
+        document.body.innerHTML += '<p style="color: red;">Error: Invalid authentication data. Please try again.</p>';
+        return;
+      }
+
+      // Display token for debugging (remove in production)
+      document.body.innerHTML += `<div style="display: none;">
+        <p>Token: ${profile.accessToken}</p>
+        <p>User: ${JSON.stringify(profile)}</p>
+      </div>`;
+
+      // Redirect to frontend with token and user info in URL fragment
+      // Using URL fragment (after #) ensures the data isn't sent to the server
+      // Make sure to properly encode the token and user data
+      const tokenParam = encodeURIComponent(profile.accessToken);
+      const userParam = encodeURIComponent(JSON.stringify(profile));
+
+      console.log('Redirecting with token:', profile.accessToken.substring(0, 10) + '...');
+      console.log('Token param length:', tokenParam.length);
+      console.log('User param length:', userParam.length);
+
+      const redirectUrl = `${frontendUrl}/auth-callback#token=${tokenParam}&user=${userParam}`;
+
+      window.location.href = redirectUrl;
     };
   </script>
 </head>
 <body>
   <h1>Authentication Successful</h1>
-  <p>Redirecting...</p>
+  <p>Redirecting to application...</p>
 </body>
 </html>

@@ -1,101 +1,180 @@
-# EmumbaStreamingApp
+# Emumba Streaming App
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+<img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45" alt="Nx logo">
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+A live streaming platform similar to YouTube Live, built with NestJS, React, TypeScript, and Tailwind CSS.
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
+## Features
 
-## Run tasks
+- User authentication with Google
+- Live streaming functionality
+- Real-time chat during streams
+- Watch recorded streams
+- Responsive design with Tailwind CSS
 
-To run the dev server for your app, use:
+## Tech Stack
 
-```sh
-npx nx serve emumba-streaming-app
+### Backend
+- NestJS
+- TypeORM with SQLite
+- Socket.io for real-time communication
+- Bull for job processing
+- Node Media Server for RTMP streaming
+- Passport.js for authentication
+
+### Frontend
+- React
+- TypeScript
+- Tailwind CSS
+- Socket.io client for real-time communication
+- HLS.js for video playback
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+- Docker (for Redis)
+
+## Getting Started
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/yourusername/emumba-streaming-app.git
+cd emumba-streaming-app
 ```
 
-To create a production bundle:
+### 2. Install dependencies
 
-```sh
-npx nx build emumba-streaming-app
+```bash
+npm install
 ```
 
-To see all available targets to run for a project, run:
+### 3. Set up environment variables
 
-```sh
-npx nx show project emumba-streaming-app
+Copy the example environment files to create your own:
+
+```bash
+# For backend
+cp .env.example .env
+
+# For frontend
+cp frontend/.env.example frontend/.env
 ```
 
-These targets are either [inferred automatically](https://nx.dev/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+Then edit the `.env` file in the root directory with your own values:
 
-[More about running tasks in the docs &raquo;](https://nx.dev/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+```
+# Server Configuration
+PORT=3000
 
-## Add new projects
+# JWT Configuration
+JWT_SECRET=your_jwt_secret_key_here
 
-While you could add new projects to your workspace manually, you might want to leverage [Nx plugins](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) and their [code generation](https://nx.dev/features/generate-code?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) feature.
+# Google OAuth Configuration
+GOOGLE_CLIENT_ID=your_google_client_id_here
+GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 
-Use the plugin's generator to create new projects.
+# Redis Configuration (for Bull queue)
+REDIS_HOST=localhost
+REDIS_PORT=6379
 
-To generate a new application, use:
+# Media Server Configuration
+RTMP_PORT=1935
+MEDIA_HTTP_PORT=8080
 
-```sh
-npx nx g @nx/node:app demo
+# CORS Configuration
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+
+# Frontend URL (for redirects)
+FRONTEND_URL=http://localhost:5173
 ```
 
-To generate a new library, use:
+Replace `your_jwt_secret_key_here`, `your_google_client_id_here`, and `your_google_client_secret_here` with your actual values.
 
-```sh
-npx nx g @nx/node:lib mylib
+For production deployment, update the following environment variables:
+
+1. In the backend `.env` file:
+   - `ALLOWED_ORIGINS`: Add your production frontend domain
+   - `FRONTEND_URL`: Set to your production frontend domain
+
+2. In the frontend `.env.production` file:
+   - `VITE_API_URL`: Set to your production backend domain, or leave empty if frontend and backend are on the same domain
+
+### 4. Start Redis
+
+Run the Redis container using Docker:
+
+```bash
+# On Linux/Mac
+./start-redis.sh
+
+# On Windows
+start-redis.bat
 ```
 
-You can use `npx nx list` to get a list of installed plugins. Then, run `npx nx list <plugin-name>` to learn about more specific capabilities of a particular plugin. Alternatively, [install Nx Console](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) to browse plugins and generators in your IDE.
+### 5. Run the application
 
-[Learn more about Nx plugins &raquo;](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) | [Browse the plugin registry &raquo;](https://nx.dev/plugin-registry?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+#### Start both backend and frontend
 
-## Set up CI!
-
-### Step 1
-
-To connect to Nx Cloud, run the following command:
-
-```sh
-npx nx connect
+```bash
+npm run start:all
 ```
 
-Connecting to Nx Cloud ensures a [fast and scalable CI](https://nx.dev/ci/intro/why-nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
+#### Start only the backend
 
-- [Remote caching](https://nx.dev/ci/features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/ci/features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/ci/features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/ci/features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Step 2
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
+```bash
+npm run start:backend
 ```
 
-[Learn more about Nx on CI](https://nx.dev/ci/intro/ci-with-nx#ready-get-started-with-your-provider?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+#### Start only the frontend
 
-## Install Nx Console
+```bash
+npm run start:frontend
+```
 
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
+### 6. Access the application
 
-[Install Nx Console &raquo;](https://nx.dev/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:3000/api
+- Media Server: http://localhost:8080
 
-## Useful links
+## Project Structure
 
-Learn more:
+```
+├── frontend/                # React frontend application
+│   ├── src/
+│   │   ├── components/      # Reusable UI components
+│   │   ├── context/         # React context providers
+│   │   ├── pages/           # Application pages
+│   │   ├── services/        # API and socket services
+│   │   └── types/           # TypeScript type definitions
+│   └── ...
+├── src/                     # NestJS backend application
+│   ├── app/                 # Main application module
+│   ├── auth/                # Authentication module
+│   ├── chat/                # Chat module
+│   ├── mediaServer/         # Media server module
+│   ├── stream/              # Stream module
+│   └── user/                # User module
+├── streams/                 # Directory for storing stream files
+└── ...
+```
 
-- [Learn more about this workspace setup](https://nx.dev/nx-api/node?utm_source=nx_project&amp;utm_medium=readme&amp;utm_campaign=nx_projects)
-- [Learn about Nx on CI](https://nx.dev/ci/intro/ci-with-nx?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Releasing Packages with Nx release](https://nx.dev/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [What are Nx plugins?](https://nx.dev/concepts/nx-plugins?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Development
 
-And join the Nx community:
-- [Discord](https://go.nx.dev/community)
-- [Follow us on X](https://twitter.com/nxdevtools) or [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [Our Youtube channel](https://www.youtube.com/@nxdevtools)
-- [Our blog](https://nx.dev/blog?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+### Building the application
+
+```bash
+npm run build:all
+```
+
+### Running tests
+
+```bash
+npm test
+```
+
+## License
+
+MIT

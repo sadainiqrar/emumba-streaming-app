@@ -19,7 +19,10 @@ import fs from 'fs';
 @WebSocketGateway({
   namespace: 'stream',
   cors: {
-    origin: '*',
+    origin: process.env.ALLOWED_ORIGINS ?
+      process.env.ALLOWED_ORIGINS.split(',') :
+      ['http://localhost:5173', 'http://127.0.0.1:5173'],
+    credentials: true,
   },
 })
 @UseGuards(WebSocketJwtGuard)
